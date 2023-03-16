@@ -1,0 +1,39 @@
+version: "3.7"
+services:
+
+    # PHP service
+    app:
+        build: ./docker/php
+        container_name: php-app
+        working_dir: /var/www/
+        volumes:
+            - ./src:/var/www
+        networks:
+            - app-network
+        ports:
+           - "8080:8080"
+        depends_on:
+             - db
+        env_file:
+            - ./.env
+        command: php -S 0.0.0.0:8080 -t /var/www/
+
+    # MySQL database service
+    db:
+        image: mysql:5.7
+        container_name: mysql-db-cours-php
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+        env_file:
+            - ./.env
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge
