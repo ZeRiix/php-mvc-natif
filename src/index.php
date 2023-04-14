@@ -1,9 +1,15 @@
 <?php
 
 include './routes/api.php';
-use App\Routes\Api;
 include './app/Core/Router.php';
+include './app/Core/Response.php';
+include './app/Core/Controller.php';
+include './app/Core/AutoLoad.php';
+require_once __DIR__ . '/config/database.php';
+include './app/Core/DatabaseConnection.php';
+
 use App\Core\Router;
+use App\Routes\Api;
 
 if (isset($_SERVER['REQUEST_URI'])) {
     $uri = $_SERVER['REQUEST_URI'];
@@ -11,32 +17,18 @@ if (isset($_SERVER['REQUEST_URI'])) {
         return 'error';
     }
 
+
+    if (strpos($uri, '?') !== false) {
+        $uri = substr($uri, 0, strpos($uri, '?'));
+    }
+
     $api = new Api();
     $router = new Router();
     $api->routes($router);
-    $router->direct($uri, $_SERVER['REQUEST_METHOD']);
-    
-    
+
+    if ($_SERVER['CONTENT_TYPE'] == 'application/json') {
+        $_REQUEST = json_decode(file_get_contents('php://input'), true);
+    }
+
+    $router->direct($uri, $_SERVER['REQUEST_METHOD'], $_REQUEST);    
 }
-
-/*
-
-try {
-    echo 'Current PHP version: ' . phpversion();
-    echo '<br />';
-
-    $host = 'db';
-    $dbname = 'database';
-    $user = 'user';
-    $pass = 'pass';
-    $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8";
-    $conn = new PDO($dsn, $user, $pass);
-
-    echo 'Database connected successfully';
-    echo '<br />';
-} catch (\Throwable $t) {
-    echo 'Error: ' . $t->getMessage();
-    echo '<br />';
-}
-
-*/

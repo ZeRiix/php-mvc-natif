@@ -2,7 +2,7 @@
 
 namespace App\Core;
 
-use Routes\Api;
+require_once __DIR__ . '/Loader.php';
 
 class Router
 {
@@ -39,20 +39,24 @@ class Router
         $this->routes['DELETE'][$uri] = $controller;
     }
 
-    public function direct($uri, $requestType)
+    public function direct($uri, $requestType, $params)
     {
         if (array_key_exists($uri, $this->routes[$requestType])) {
+            $controller = explode('@', $this->routes[$requestType][$uri]);
             return $this->callAction(
-                ...explode('@', $this->routes[$requestType][$uri])
+                $controller[0], $controller[1], $params
             );
         }
 
         throw new \Exception('No route defined for this URI.');
     }
 
-    protected function callAction($controller, $action)
+    protected function callAction($controller, $action, $params)
     {
         $pathController = "App\\Controllers\\{$controller}";
+
+        $loader = new Loader();
+        $loader->load($controller);
 
         $initController = new $pathController();
 
@@ -60,6 +64,10 @@ class Router
             throw new \Exception(
                 "{$controller} does not respond to the {$action} action."
             );
+        }
+
+        if (count($params) > 0) {
+            return $initController->$action($params);
         }
 
         return $initController->$action();

@@ -2,20 +2,11 @@
 
 namespace App\Core;
 
-use Core\View;
 
 class Controller
 {
-
-    protected View $view;
-
-    public function __construct(View $view)
+    public function getFirstValue($array)
     {
-        $this->view = $view;
-    }
-
-    public function render(string $template, array $data = []) : string
-    {
-        return $this->view->render($template, $data);
+        return $array[0];
     }
 }
