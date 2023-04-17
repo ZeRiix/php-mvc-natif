@@ -7,20 +7,18 @@ class AutoLoad
 {
     protected $directories = [];
 
-    public function register() {
-
+    public function register()
+    {
         spl_autoload_register(array($this, 'loadClass'));
-
     }
-    
-    public function addDirectory($directory) {
 
+    public function addDirectory($directory)
+    {
         $this->directories[] = $directory;
-
     }
 
-    public function loadClass($class) {
-
+    public function loadClass($class)
+    {
         $class = explode('\\', $class);
         $class = end($class);
 
@@ -28,15 +26,11 @@ class AutoLoad
 
             $file = __DIR__ . '/../' . $directory . '/' . $class . '.php';
 
-            if(file_exists($file)) {
+            if (file_exists($file)) {
 
                 require_once $file;
                 return true;
-
             }
-            return false;
-
         }
-
     }
 }

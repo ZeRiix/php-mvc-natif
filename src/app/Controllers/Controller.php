@@ -20,13 +20,12 @@ class Controller
         $this->autoload->addDirectory('Services');
         $this->autoload->register();
         $this->testServices = new TestServices();
-        $this->r = new Response();  
+        $this->r = new Response();
     }
 
     public function test()
     {
         return $this->r->HTTPResponse(200, 'successfully', [
-            'status' => 'success',
             'message' => 'Hello World',
             'data' => $this->testServices->test()
         ]);
@@ -42,12 +41,10 @@ class Controller
         try {
             $this->testServices->testInsert($param['table'], $param['data']);
             return $this->r->HTTPResponse(200, 'successfully', [
-                'status' => 'success',
                 'message' => 'Insert successfully',
             ]);
         } catch (\Exception $e) {
             return $this->r->HTTPResponse(500, 'error', [
-                'status' => 'error',
                 'message' => $e->getMessage(),
                 'data' => []
             ]);
@@ -59,13 +56,11 @@ class Controller
         try {
             $test = $this->testServices->getAll($table);
             return $this->r->HTTPResponse(200, 'successfully', [
-                'status' => 'success',
                 'message' => 'Get all successfully',
                 'data' => $test
             ]);
         } catch (\Exception $e) {
             return $this->r->HTTPResponse(500, 'error', [
-                'status' => 'error',
                 'message' => $e->getMessage(),
                 'data' => []
             ]);
