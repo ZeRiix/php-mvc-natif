@@ -1,0 +1,10 @@
+<?php
+
+require_once __DIR__ . '/app/Core/Migration.php';
+require_once __DIR__ . '/app/Core/DatabaseConnection.php';
+
+function migrate($file)
+{
+    $migration = new App\Core\Migration();
+    
+}

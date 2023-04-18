@@ -97,4 +97,19 @@ class Controller
             ]);
         }
     }
+
+    public function updateUserWhere($data)
+    {
+        try {
+            $this->testServices->updateUserWhere($data['data'], $data['where']);
+            return $this->r->HTTPResponse(200, 'successfully', [
+                'message' => 'Update successfully',
+            ]);
+        } catch (\Exception $e) {
+            return $this->r->HTTPResponse(500, 'error', [
+                'message' => $e->getMessage(),
+                'data' => []
+            ]);
+        }
+    }
 }

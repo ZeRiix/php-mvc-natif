@@ -18,5 +18,6 @@ class Api
         $router->post('/api/insertUser', 'Controller@insertUser');
         $router->post('/api/getAllUserWhere', 'Controller@getAllUserWhere');
         $router->post('/api/deleteUser', 'Controller@deleteUser');
+        $router->post('/api/updateUserWhere', 'Controller@updateUserWhere');
     }
 }

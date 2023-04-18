@@ -14,30 +14,46 @@ class TestServices
 
     public function __construct()
     {
-        $this->db = new DatabaseConnection();
         $load = new AutoLoad();
         $load->addDirectory('Models');
         $load->register();
         $this->user = new UserModel();
     }
 
-    public function test()
+    public function test() : string
     {
         return 'test';
     }
 
-    public function insertUser($data)
+    /*
+    *  @Array $data = [
+    *       'name' => 'Pedro',
+    *       'email' => 'pedro@mail.com,
+    *       'password' => '123456'
+    *   ]
+    *  @return void
+    */
+    public function insertUser($data) : void
     {
         $sql = $this->user->insert($data);
         $this->user->exec($sql);
     }
 
-    public function getAllUser()
+    /*
+    *  @return Array
+    */
+    public function getAllUser() : array 
     {
         return $this->user->getAll();
     }
 
-    public function getAllUserWhere($data)
+    /*
+    *  @Array $data = [
+    *       'name' => 'Pedro'
+    *   ]
+    *  @return Array
+    */
+    public function getAllUserWhere($data) : array
     {
         $sql = $this->user->select(['id', 'name', 'email']);
         $sql .= $this->user->where($data);
@@ -45,12 +61,32 @@ class TestServices
         return $this->user->exec($sql);
     }
 
-    public function deleteUser($data)
+    /*
+    *  @Array $data = [
+    *       'id' => 1
+    *   ]
+    *  @return void
+    */
+    public function deleteUser($data) : void
     {
         $sql = $this->user->delete();
         $sql .= $this->user->where($data);
         $this->user->exec($sql);
     }
 
-    
+    /*
+    *  @Array $data = [
+    *       'email => 'pedro1234@mail.com'
+    *   ]
+    *  @Array $where = [
+    *       'id' => 1
+    *   ]
+    *  @return void
+    */
+    public function updateUserWhere($data, $where) : void
+    {
+        $sql = $this->user->update($data);
+        $sql .= $this->user->where($where);
+        $this->user->exec($sql);
+    }
 }
