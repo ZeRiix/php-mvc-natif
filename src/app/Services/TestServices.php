@@ -3,14 +3,22 @@
 namespace App\Services;
 
 use App\Core\DatabaseConnection;
+use App\Models\UserModel;
+use App\Core\AutoLoad;
 
 class TestServices
 {
     public $db;
 
+    public $user;
+
     public function __construct()
     {
         $this->db = new DatabaseConnection();
+        $load = new AutoLoad();
+        $load->addDirectory('Models');
+        $load->register();
+        $this->user = new UserModel();
     }
 
     public function test()
@@ -18,40 +26,31 @@ class TestServices
         return 'test';
     }
 
-    public function testInsert($table, $data)
+    public function insertUser($data)
     {
-        if (empty($data)) {
-            throw new \Exception('Data is empty');
-        }
-        if (empty($table)) {
-            throw new \Exception('Table is empty');
-        }
-
-        $db = $this->db->testConnection();
-        if(!isset($db)) {
-            throw new \Exception('Database is not connected');
-        }
-        $sql = "INSERT INTO $table (";
-        foreach ($data as $key => $value) {
-            $sql .= $key . ", ";
-        }
-        $sql = substr($sql, 0, -2);
-        $sql .= ") VALUES (";
-        foreach ($data as $value) {
-            $sql .= "?, ";
-        }
-        $sql = substr($sql, 0, -2);
-        $sql .= ")";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([$data['name'], $data['email'], $data['password']]);
+        $sql = $this->user->insert($data);
+        $this->user->exec($sql);
     }
 
-    public function getAll($table)
+    public function getAllUser()
     {
-        $db = $this->db->testConnection();
-        $sql = "SELECT * FROM " . $table['table'];
-        $stmt = $db->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        return $this->user->getAll();
     }
+
+    public function getAllUserWhere($data)
+    {
+        $sql = $this->user->select(['id', 'name', 'email']);
+        $sql .= $this->user->where($data);
+
+        return $this->user->exec($sql);
+    }
+
+    public function deleteUser($data)
+    {
+        $sql = $this->user->delete();
+        $sql .= $this->user->where($data);
+        $this->user->exec($sql);
+    }
+
+    
 }

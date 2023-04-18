@@ -36,10 +36,10 @@ class Controller
         return $this->r->HTTPResponse(200, 'successfully', $param['top']);
     }
 
-    public function testInsert($param)
+    public function insertUser($param)
     {
         try {
-            $this->testServices->testInsert($param['table'], $param['data']);
+            $this->testServices->insertUser($param['data']);
             return $this->r->HTTPResponse(200, 'successfully', [
                 'message' => 'Insert successfully',
             ]);
@@ -51,13 +51,44 @@ class Controller
         }
     }
 
-    public function getAll($table)
+    public function getAllUser()
     {
         try {
-            $test = $this->testServices->getAll($table);
+            $test = $this->testServices->getAllUser();
             return $this->r->HTTPResponse(200, 'successfully', [
                 'message' => 'Get all successfully',
                 'data' => $test
+            ]);
+        } catch (\Exception $e) {
+            return $this->r->HTTPResponse(500, 'error', [
+                'message' => $e->getMessage(),
+                'data' => []
+            ]);
+        }
+    }
+
+    public function getAllUserWhere($data)
+    {
+        try {
+            $test = $this->testServices->getAllUserWhere($data['data']);
+            return $this->r->HTTPResponse(200, 'successfully', [
+                'message' => 'Get all successfully',
+                'data' => $test
+            ]);
+        } catch (\Exception $e) {
+            return $this->r->HTTPResponse(500, 'error', [
+                'message' => $e->getMessage(),
+                'data' => []
+            ]);
+        }
+    }
+
+    public function deleteUser($data)
+    {
+        try {
+            $this->testServices->deleteUser($data['data']);
+            return $this->r->HTTPResponse(200, 'successfully', [
+                'message' => 'Delete successfully',
             ]);
         } catch (\Exception $e) {
             return $this->r->HTTPResponse(500, 'error', [
