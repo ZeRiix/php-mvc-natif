@@ -76,7 +76,7 @@ class TestServices
 
     /*
     *  @Array $data = [
-    *       'email => 'pedro1234@mail.com'
+    *       'email' => 'pedro1234@mail.com'
     *   ]
     *  @Array $where = [
     *       'id' => 1

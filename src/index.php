@@ -12,12 +12,11 @@ $loader->register();
 
 use App\Core\Router;
 use App\Routes\Api;
+use App\Core\Response;
+
 
 if (isset($_SERVER['REQUEST_URI'])) {
     $uri = $_SERVER['REQUEST_URI'];
-    if (strpos($uri, '/api') !== 0) {
-        return 'error';
-    }
 
     if (strpos($uri, '?') !== false) {
         $uri = substr($uri, 0, strpos($uri, '?'));
@@ -30,7 +29,15 @@ if (isset($_SERVER['REQUEST_URI'])) {
         $_REQUEST = json_decode(file_get_contents('php://input'), true);
     }
 
-    $router->direct($uri, $_SERVER['REQUEST_METHOD'], $_REQUEST);
+    try {
+        $router->direct($uri, $_SERVER['REQUEST_METHOD'], $_REQUEST);
+    } catch (\Exception $e) {
+        $response = new Response();
+        return $response->HTTPResponse(500, 'error', [
+            'message' => $e->getMessage(),
+            'data' => []
+        ]);
+    }
 } else {
     return 'Error API';
 }

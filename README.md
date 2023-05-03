@@ -13,11 +13,10 @@
 
 <h3 style="align-content: center">
     🔹
-    <a href="https://github.com/ZeRiix/php-mvc-natif/issues" style="color: #0078d7">Report Bug</a> &nbsp; &nbsp;
+    <a href="https://github.com/ZeRiix/php-mvc-natif/issues" style="color: #0078d7">Report Bug</a>    
     🔹
     <a href="https://github.com/ZeRiix/php-mvc-natif/issues" style="color: #0078d7">Request Feature</a>
 </h3>
-
 
 ###### PMN (php mvc natif) est un framework mvc php compatibke avec une bdd MySQL
 
@@ -41,9 +40,9 @@ docker-compose up -d
 ## Future Features
 
 - ORM for Mysql Complete
-- Console
 - Middleware
 - Command
+- Engin template
 
 ## License
 

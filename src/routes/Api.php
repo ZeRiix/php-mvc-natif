@@ -3,11 +3,14 @@
 namespace App\Routes;
 
 use App\Core\Router;
+use App\Core\middleware;
 
 class Api
 {
     public static function routes(Router $router)
     {
+
+        $router->middleware('TestMiddleware', '/api/test', 'GET');
         //GET
         $router->get('/api/test', 'Controller@test');
         $router->get('/api/test2', 'Controller@test2');

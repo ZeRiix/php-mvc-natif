@@ -4,6 +4,8 @@ namespace App\Core;
 
 require_once __DIR__ . '/Loader.php';
 
+use App\Core\Middleware;
+
 class Router
 {
 
@@ -71,5 +73,11 @@ class Router
         }
 
         return $initController->$action();
+    }
+
+    public function middleware($middleware, $uri, $requestType)
+    {
+        $middleware = "App\\Core\\Middleware\\{$middleware}";
+        $routes[$requestType][$uri] = $middleware;
     }
 }

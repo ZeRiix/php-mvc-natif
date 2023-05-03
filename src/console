@@ -1,10 +1,232 @@
 <?php
 
+require_once __DIR__ . '/config/Database.php';
 require_once __DIR__ . '/app/Core/Migration.php';
 require_once __DIR__ . '/app/Core/DatabaseConnection.php';
 
-function migrate($file)
-{
-    $migration = new App\Core\Migration();
-    
+foreach(glob(__DIR__ . '/databases/migrations/*.php') as $file) {
+    require_once $file;
 }
+
+use App\Core\DatabaseConnection;
+use App\Core\Migration;
+
+
+function printFunc() {
+    $func = [
+        'migrate' => 'run migration file',
+        'migrate:reset' => 'reset migration file',
+        'make:migration' => 'create migration file',
+        'make:controller' => 'create controller file',
+        'make:model' => 'create model file',
+        'make:middleware' => 'create middleware file',
+        'make:command' => 'create command file',
+    ];
+
+    foreach ($func as $key => $value) {
+        echo "\033[32m$key\033[0m" . ' ' . $value . PHP_EOL;
+    }
+}
+
+$databaseConnection = new DatabaseConnection();
+$databaseConnection->connect();
+$db = $databaseConnection->testConnection();
+
+//print_r(posix_getpwuid(posix_geteuid()));
+
+function getRealUser() 
+{
+    if (get_current_user() == null)
+    {
+        $user = posix_getpwuid(posix_geteuid());
+        if ($user['name'] == 'root')
+        {
+            return 1000;
+        }
+    }
+    $user = posix_getpwuid(posix_geteuid());
+    return $user['name'];
+}
+
+if (isset($argv[1]))
+{
+    switch($argv[1])
+    {
+        case 'migrate':
+            if (isset($argv[2]))
+            {
+                if(file_exists(__DIR__ . '/databases/migrations/' . $argv[2] . '.php'))
+                {
+                    $migration = new $argv[2]();
+                    $migration->up($db);
+                    print_r('Migration successfully' . PHP_EOL);
+                }
+                else
+                {
+                    echo 'Migration file not found' . PHP_EOL;
+                }
+            }
+            else
+            {
+                echo 'Please enter migration file name' . PHP_EOL;
+            }
+            break;
+        case 'migrate:reset':
+            foreach(glob(__DIR__ . '/databases/migrations/*.php') as $file) {
+                require_once $file;
+                $migration = new $file();
+                $migration->up($db);
+            }
+            print_r('Migration reset successfully' . PHP_EOL);
+            break;
+        case 'make:migration':
+            if (isset($argv[2]))
+            {
+                $file = fopen(__DIR__ . '/databases/migrations/' . $argv[2] . '.php', 'c+');
+                if(is_writable(__DIR__ . '/databases/migrations/' . $argv[2] . '.php'))
+                {
+                    fwrite($file, "<?php
+
+use App\Core\Migration;
+
+class " . $argv[2] . " extends Migration
+{
+    public function up()
+    {
+        //
+    }
+
+    public function down()
+    {
+        //
+    }
+}"
+                    );
+                    fclose($file);
+                    chown(__DIR__ . '/databases/migrations/' . $argv[2] . '.php', 1000);
+                    print_r('Migration created successfully' . PHP_EOL);
+                }
+            }
+            else
+            {
+                print_r('Please enter migration file name' . PHP_EOL);
+            }
+            break;
+        case 'make:controller':
+            if (isset($argv[2]))
+            {
+                $file = fopen(__DIR__ . '/app/Controllers/' . $argv[2] . '.php', 'c+');
+                if(is_writable(__DIR__ . '/app/Controllers/' . $argv[2] . '.php'))
+                {
+                    fwrite($file, "<?php
+
+namespace App\Controllers;
+
+use App\Core\Controller;
+
+class " . $argv[2] . " extends Controller
+{
+    //
+}"
+                    );
+                    fclose($file);
+                    chown(__DIR__ . '/app/Controllers/' . $argv[2] . '.php', 1000);
+                    print_r('Controller created successfully' . PHP_EOL);
+                }
+            }
+            else
+            {
+                print_r('Please enter controller file name' . PHP_EOL);
+            }
+            break;
+        case 'make:model':
+            if (isset($argv[2]))
+            {
+                $file = fopen(__DIR__ . '/app/Models/' . $argv[2] . '.php', 'c+');
+                if(is_writable(__DIR__ . '/app/Models/' . $argv[2] . '.php'))
+                {
+                    fwrite($file, "<?php
+
+namespace App\Models;
+
+use App\Core\Model;
+
+class " . $argv[2] . " extends Model
+{
+    //
+}"
+                    );
+                    fclose($file);
+                    chown(__DIR__ . '/app/Models/' . $argv[2] . '.php', 1000);
+                    print_r('Model created successfully' . PHP_EOL);
+                }
+            }
+            else
+            {
+                print_r('Please enter model file name' . PHP_EOL);
+            }
+            break;
+        case 'make:middleware':
+            if ($argv[2])
+            {
+                $file = fopen(__DIR__ . '/app/Middlewares/' . $argv[2] . '.php', 'c+');
+                if(is_writable(__DIR__ . '/app/Middlewares/' . $argv[2] . '.php'))
+                {
+                    fwrite($file, "<?php
+
+namespace App\Middlewares;
+
+use App\Core\Middleware;
+
+class " . $argv[2] . " extends Middleware
+{
+    //
+}"
+                    );
+                    fclose($file);
+                    chown(__DIR__ . '/app/Middlewares/' . $argv[2] . '.php', 1000);
+                    print_r('Middleware created successfully' . PHP_EOL);
+                }
+            }
+            else
+            {
+                print_r('Please enter middleware file name' . PHP_EOL);
+            }
+            break;
+        case 'make:command':
+            if ($argv[2])
+            {
+                $file = fopen(__DIR__ . '/app/Commands/' . $argv[2] . '.php', 'c+');
+                if(is_writable(__DIR__ . '/app/Commands/' . $argv[2] . '.php'))
+                {
+                    fwrite($file, "<?php
+
+namespace App\Commands;
+
+use App\Core\Command;
+
+class " . $argv[2] . " extends Command
+{
+    //
+}"
+                    );
+                    fclose($file);
+                    chown(__DIR__ . '/app/Commands/' . $argv[2] . '.php', 1000);
+                    print_r('Command created successfully' . PHP_EOL);
+                }
+            }
+            else
+            {
+                print_r('Please enter command file name' . PHP_EOL);
+            }
+            break;
+        default:
+            printFunc();
+    }
+}
+else
+{
+    printFunc();
+}
+
+
