@@ -35,16 +35,23 @@ class TestServices
     */
     public function insertUser($data) : void
     {
-        $sql = $this->user->insert($data);
-        $this->user->exec($sql);
+        try {
+            $this->user->set($data)->save();
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
     }
 
     /*
     *  @return Array
     */
-    public function getAllUser() : array 
+    public function getAllUser() : Array
     {
-        return $this->user->getAll();
+        try {
+            return $this->user->get()->exec();
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
     }
 
     /*
@@ -55,10 +62,16 @@ class TestServices
     */
     public function getAllUserWhere($data) : array
     {
-        $sql = $this->user->select(['id', 'name', 'email']);
-        $sql .= $this->user->where($data);
-
-        return $this->user->exec($sql);
+        try {
+            $this->user->get();
+            foreach ($data as $key => $value) {
+                $this->user->where($key, '=', $value);
+            }
+            die($this->user->sql);
+            return $this->user->exec();
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
     }
 
     /*

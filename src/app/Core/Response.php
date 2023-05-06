@@ -6,7 +6,7 @@ class Response
 {
     public function HTTPResponse($code, $message, $data)
     {
-        header('Content-Type: application/http');
+        header('Content-Type: application/json');
         http_response_code($code);
         echo json_encode([
             'status' => $this->defineStatus($code),

@@ -15,6 +15,7 @@ class Api
         $router->get('/api/test', 'Controller@test');
         $router->get('/api/test2', 'Controller@test2');
         $router->get('/api/getAllUser', 'Controller@getAllUser');
+        $router->get('/api/testModel', 'Controller@getColumsUserTable');
 
         //POST
         $router->post('/api/test2', 'Controller@test2');
@@ -22,5 +23,6 @@ class Api
         $router->post('/api/getAllUserWhere', 'Controller@getAllUserWhere');
         $router->post('/api/deleteUser', 'Controller@deleteUser');
         $router->post('/api/updateUserWhere', 'Controller@updateUserWhere');
+
     }
 }

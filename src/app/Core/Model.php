@@ -2,593 +2,185 @@
 
 namespace App\Core;
 
-use App\Core\DatabaseConnection;
+use App\Core\DatabaseConnection as Database;
 
-abstract class Model {
+use function PHPSTORM_META\type;
 
+abstract class Model
+{
+    protected $db;
 
-    private $table;
+    private String $table;
 
-    private $db;
+    private Array $columns;
 
-    public function __construct($table)
+    public Array $data;
+
+    public String $sql;
+
+    public function __construct(String $table)
     {
+        $this->db = new Database();
         $this->table = $table;
-        $this->db = new DatabaseConnection();
+        $this->columns = $this->getColums($this->table);
+        $this->setKeyData();
+
     }
 
-    public function getAll()
+    private function getColums(String $table)
     {
-        $sql = $this->select(['*']);
-        return $this->exec($sql);
+        $this->sql = "SHOW COLUMNS FROM $table";
+        return $this->exec();
     }
 
-    public function select($data)
+    public function setKeyData(): void
     {
-        $sql = "SELECT";
-        foreach ($data as $value) {
-            $sql .= " " . $value . ",";
+        foreach ($this->columns as $key => $value) {
+            $this->data[$value['Field']] = [];
         }
-        $sql = substr($sql, 0, -1);
-        $sql .= " FROM " . $this->table;
-
-        return $sql;
     }
 
-    public function where($data)
+    public function set($data): object
     {
-        $sql = " WHERE";
         foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
+            if (array_key_exists($key, $this->data)) {
+                $this->data[$key] = $value;
+            } else {
+                throw new \Exception("Column $key not found");
             }
-            $sql .= " " . $key . " = " . $value . " AND";
         }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
+        return $this;
     }
 
-    public function exec($sql)
+    public function exec()
     {
-        $db = $this->db->testConnection();
-        $stmt = $db->prepare($sql);
-        $stmt->execute();
+        try {
+            $stmt = $this->db->db->prepare($this->sql);
+            $stmt->execute();
+            $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }   
 
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        return $result;
     }
 
-    public function insert($data)
+    public function printColumns(): Array
     {
-        $sql = "INSERT INTO $this->table (";
-        foreach ($data as $key => $value) {
-            $sql .= $key . ", ";
-        }
-        $sql = substr($sql, 0, -2);
-        $sql .= ") VALUES (";
+        return $this->columns;
+    }
 
-        foreach ($data as $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
+    public function get(mixed $column = null): object
+    {
+        if ($column != null)
+        {
+            if (gettype($column) == 'string') 
+            {
+                $this->sql = "SELECT $column FROM $this->table";
+            } 
+            else if (gettype($column) == 'array') 
+            {
+                $this->sql = "SELECT ";
+                $this->sql .= implode(',', $column);
+                $this->sql .= " FROM $this->table";
+            } else {
+                throw new \Exception('Column must be string or array');
             }
-            $sql .= $value . ", ";
+        } else {
+            $this->sql = "SELECT * FROM $this->table";
         }
-        $sql = substr($sql, 0, -2);
-        $sql .= ")";
 
-        return $sql;
+        return $this;
     }
 
-    public function delete()
+    public function create(): Array
     {
-        $sql = "DELETE FROM $this->table";
-
-        return $sql;
-    }
-
-    public function update($data)
-    {
-        $sql = "UPDATE $this->table SET ";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
+        $this->sql = "INSERT INTO $this->table (";
+        foreach($this->data as $key => $value) {
+            if ($value != null) {
+                $this->sql .= "$key, ";
             }
-            $sql .= $key . " = " . $value . ", ";
         }
-        $sql = substr($sql, 0, -2);
-
-        return $sql;
-    }
-
-    public function whereIn($data)
-    {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
+        $this->sql = substr($this->sql, 0, -2);
+        $this->sql .= ") VALUES (";
+        foreach($this->data as $key => $value) {
+            if ($value != null) {
+                $this->sql .= "'$value', ";
             }
-            $sql .= " " . $key . " IN (" . $value . ") AND";
         }
-        $sql = substr($sql, 0, -4);
+        $this->sql = substr($this->sql, 0, -2);
+        $this->sql .= ")";
 
-        return $sql;
+        return $this->exec();
     }
 
-    public function whereOr($data)
+    public function where($colums, $operator, $value): object
     {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
+        if (gettype($value) == 'string' or gettype($value) == 'integer' and 
+            gettype($operator) == 'string' and 
+            gettype($colums) == 'string') 
+        {
+            if (strpos($this->sql, 'WHERE') == false) 
+            {
+                $this->sql .= " WHERE $colums $operator '$value'";
+            } else 
+            {
+                if (strpos($this->sql, '=') == false) 
+                {
+                    if ($operator == '=')
+                    {
+                        $this->sql .= " OR $colums $operator '$value'";
+                        print('1');
+                    } else 
+                    {
+                        $this->sql .= " AND $colums $operator '$value'";
+                    }
+                } else 
+                {
+                    print($this->sql);
+                    $this->sql .= " OR $colums $operator '$value'";
+                }
             }
-            $sql .= " " . $key . " = " . $value . " OR";
         }
-        $sql = substr($sql, 0, -3);
 
-        return $sql;
+        return $this;
     }
 
-    public function whereNotIn($data)
+    public function first()
     {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " NOT IN (" . $value . ") AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
+        $this->sql .= " LIMIT 1";
+        return $this;
     }
 
-    public function whereBetween($data)
+    public function delete(): object
     {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " BETWEEN " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
+        $this->sql = "DELETE FROM $this->table";
+        return $this;
     }
 
-    public function whreNotEqual($data)
+    public function update(): Array
     {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " != " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
+        $this->sql = "UPDATE $this->table SET ";
+        $this->sql .= implode(', ', array_map(function ($key, $value) {
+            return "$key = '$value'";
+        }, array_keys($this->data), $this->data));
+        $this->sql .= " WHERE {$this->columns[0]['Field']} = " . $this->data[$this->columns[0]['Field']];
 
-        return $sql;
+        //die($this->sql);
+        return $this->exec();
     }
 
-    public function whereLike($data)
+    public function save(): Array
     {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " LIKE " . $value . " AND";
+        //(var_dump(array_key_exists($this->columns[0]['Field'], $this->data)));
+        if (array_key_exists($this->columns[0]['Field'], $this->data) == false)
+        {
+            return $this->create();
+        } else 
+        {
+            return $this->update();
         }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
     }
 
-    public function whereNotLike($data)
-    {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " NOT LIKE " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function whereNull($data)
-    {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " IS NULL AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function whereNotNull($data)
-    {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " IS NOT NULL AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function whereGreaterThan($data)
-    {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " > " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function whereLessThan($data)
-    {
-        $sql = " WHERE";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " < " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function or($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " = " . $value . " OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orNotEqual($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " != " . $value . " OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orLike($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " LIKE " . $value . " OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orNotLike($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " NOT LIKE " . $value . " OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orNull($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " IS NULL OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orNotNull($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " IS NOT NULL OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orGreaterThan($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " > " . $value . " OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orLessThan($data)
-    {
-        $sql = " OR";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " < " . $value . " OR";
-        }
-        $sql = substr($sql, 0, -3);
-
-        return $sql;
-    }
-
-    public function orderBy($data)
-    {
-        $sql = " ORDER BY";
-        foreach ($data as $key => $value) {
-            $sql .= " " . $key . " " . $value . ",";
-        }
-        $sql = substr($sql, 0, -1);
-
-        return $sql;
-    }
-
-    public function groupBy($data)
-    {
-        $sql = " GROUP BY";
-        foreach ($data as $key => $value) {
-            $sql .= " " . $value . ",";
-        }
-        $sql = substr($sql, 0, -1);
-
-        return $sql;
-    }
-
-    public function limit($data)
-    {
-        $sql = " LIMIT";
-        foreach ($data as $key => $value) {
-            $sql .= " " . $value . ",";
-        }
-        $sql = substr($sql, 0, -1);
-
-        return $sql;
-    }
-
-    public function offset($data)
-    {
-        $sql = " OFFSET";
-        foreach ($data as $key => $value) {
-            $sql .= " " . $value . ",";
-        }
-        $sql = substr($sql, 0, -1);
-
-        return $sql;
-    }
-
-    public function join($data)
-    {
-        $sql = "";
-        foreach ($data as $key => $value) {
-            $sql .= " " . $value['type'] . " JOIN " . $value['table'] . " ON " . $value['first'] . " = " . $value['second'];
-        }
-
-        return $sql;
-    }
-
-    public function and($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " = " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function andNotEqual($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " != " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function andLike($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " LIKE " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function andNotLike($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " NOT LIKE " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function andNull($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " IS NULL AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function andNotNull($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " IS NOT NULL AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function andGreaterThan($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " > " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
-
-    public function andLessThan($data)
-    {
-        $sql = " AND";
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $value = "'" . $value . "'";
-            } else if (is_null($value)) {
-                $value = "NULL";
-            }
-            $sql .= " " . $key . " < " . $value . " AND";
-        }
-        $sql = substr($sql, 0, -4);
-
-        return $sql;
-    }
+    
 }

@@ -17,7 +17,7 @@ class DatabaseConnection {
         $this->connect();
     }
 
-    public function connect(): void
+    public function connect()
     {
         $this->db = new \PDO(
             $this->con['driver'] . ':host=' . $this->con['host'] . ';port=' . $this->con['port'] . ';dbname=' . $this->con['database'],

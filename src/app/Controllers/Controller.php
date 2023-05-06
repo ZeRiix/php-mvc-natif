@@ -6,6 +6,7 @@ use App\Core\Controller as BaseController;
 use App\Core\Response;
 use App\Core\AutoLoad;
 use App\Services\TestServices;
+use App\Models\User;
 
 class Controller
 {
@@ -18,6 +19,8 @@ class Controller
     {
         $this->autoload = new AutoLoad();
         $this->autoload->addDirectory('Services');
+        //testModels
+        $this->autoload->addDirectory('Models');
         $this->autoload->register();
         $this->testServices = new TestServices();
         $this->r = new Response();
@@ -104,6 +107,28 @@ class Controller
             $this->testServices->updateUserWhere($data['data'], $data['where']);
             return $this->r->HTTPResponse(200, 'successfully', [
                 'message' => 'Update successfully',
+            ]);
+        } catch (\Exception $e) {
+            return $this->r->HTTPResponse(500, 'error', [
+                'message' => $e->getMessage(),
+                'data' => []
+            ]);
+        }
+    }
+
+    public function getColumsUserTable()
+    {
+        try {
+            $user = new User();
+            $test = $user->get(['id', 'name'])
+                        ->where('id', '>', 5)
+                        ->where('id', '=', 2)
+                        ->exec();
+            //$test = $user->printColumns();
+            //die(print_r(json_encode($test)));
+            return $this->r->HTTPResponse(200, 'successfully', [
+                'message' => 'Get all successfully',
+                'data' => $test
             ]);
         } catch (\Exception $e) {
             return $this->r->HTTPResponse(500, 'error', [
